@@ -1,0 +1,403 @@
+@import "tailwindcss";
+
+/*
+  App-wide design tokens. Keeping this simple for Milestone 1:
+  a light gray app background with dark text. (No auto dark-mode yet
+  so the UI looks predictable while learning.)
+*/
+:root {
+  --background: #f8fafc; /* slate-50 */
+  --foreground: #0f172a; /* slate-900 */
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* ===========================================================================
+   Midnight Gold — login screen
+   A self-contained dark theme scoped under .mg-* so the (light) task pages
+   are never affected. Palette derived from the brief:
+   charcoal #1A1A1A · ink #0F0F0F · bronze #5E4B43 · gold #C9A86A.
+   =========================================================================== */
+.mg-screen {
+  --ink: #0f0f0f;
+  --charcoal: #1a1a1a;
+  --bronze: #5e4b43;
+  --gold: #c9a86a;
+  --gold-bright: #e8cf96;
+  --cream: #ede6d8;
+  --muted: #8c8377;
+  --line: rgba(201, 168, 106, 0.22);
+
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.5rem;
+  overflow: hidden;
+  color: var(--cream);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background:
+    radial-gradient(120% 120% at 50% -10%, #2a241d 0%, var(--charcoal) 42%, var(--ink) 100%);
+}
+
+/* Ambient atmosphere: two slow-drifting gold/bronze glows behind the card. */
+.mg-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.5;
+  pointer-events: none;
+  will-change: transform;
+}
+.mg-glow--gold {
+  width: 38rem;
+  height: 38rem;
+  left: -8rem;
+  top: -10rem;
+  background: radial-gradient(circle, rgba(201, 168, 106, 0.55), transparent 62%);
+  animation: mg-drift-a 16s ease-in-out infinite alternate;
+}
+.mg-glow--bronze {
+  width: 34rem;
+  height: 34rem;
+  right: -9rem;
+  bottom: -11rem;
+  background: radial-gradient(circle, rgba(94, 75, 67, 0.85), transparent 60%);
+  animation: mg-drift-b 19s ease-in-out infinite alternate;
+}
+/* Fine grain so the flat darks read as material, not a void. */
+.mg-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes mg-drift-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(4rem, 3rem, 0) scale(1.12); }
+}
+@keyframes mg-drift-b {
+  from { transform: translate3d(0, 0, 0) scale(1.05); }
+  to   { transform: translate3d(-3.5rem, -2.5rem, 0) scale(1); }
+}
+
+/* ---- The ticket ---------------------------------------------------------- */
+.mg-ticket {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  width: min(880px, 100%);
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)) ,
+    rgba(20, 20, 20, 0.72);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 40px 80px -30px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+  animation: mg-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes mg-rise {
+  from { opacity: 0; transform: translateY(22px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Brand stub */
+.mg-stub {
+  position: relative;
+  padding: 2.75rem 2.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2.5rem;
+  background:
+    linear-gradient(155deg, rgba(94, 75, 67, 0.45) 0%, rgba(26, 26, 26, 0.2) 55%);
+}
+.mg-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.mg-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 7px;
+  color: var(--ink);
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold) 55%, var(--bronze));
+  box-shadow: 0 4px 14px -4px rgba(201, 168, 106, 0.6);
+}
+.mg-brand-name {
+  font-family: var(--font-geist-sans), sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.mg-wordmark {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(2rem, 2.2vw + 1.4rem, 2.9rem);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+.mg-wordmark em {
+  font-style: italic;
+  background: linear-gradient(100deg, var(--gold-bright), var(--gold) 60%, #b8995a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.mg-tagline {
+  margin-top: 0.85rem;
+  max-width: 22ch;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.mg-serial {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.mg-serial span { color: var(--gold); }
+
+/* Perforated divider between stub and form */
+.mg-perf {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 1px;
+  background-image: linear-gradient(var(--line) 55%, transparent 55%);
+  background-size: 1px 12px;
+}
+.mg-notch {
+  position: absolute;
+  right: -8px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 1px solid var(--line);
+}
+.mg-notch--top { top: -8px; }
+.mg-notch--bottom { bottom: -8px; }
+
+/* Form panel */
+.mg-form {
+  padding: 2.75rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+}
+.mg-form-head { margin-bottom: 1.6rem; }
+.mg-form-title {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 500;
+  font-size: 1.6rem;
+  letter-spacing: -0.01em;
+}
+.mg-form-sub {
+  margin-top: 0.35rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.mg-field {
+  position: relative;
+  margin-top: 1.05rem;
+  opacity: 0;
+  animation: mg-rise 0.55s ease both;
+}
+.mg-field input {
+  width: 100%;
+  padding: 1.35rem 0.9rem 0.55rem;
+  font-size: 0.95rem;
+  color: var(--cream);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 11px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.mg-field--pw input { padding-right: 3rem; }
+.mg-field input::placeholder { color: transparent; }
+.mg-field label {
+  position: absolute;
+  left: 0.95rem;
+  top: 0.95rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+  pointer-events: none;
+  transition: transform 0.18s ease, color 0.18s ease, font-size 0.18s ease;
+  transform-origin: left top;
+}
+.mg-field input:focus + label,
+.mg-field input:not(:placeholder-shown) + label {
+  transform: translateY(-0.72rem) scale(0.8);
+  color: var(--gold);
+}
+.mg-field input:focus {
+  border-color: rgba(201, 168, 106, 0.6);
+  background: rgba(201, 168, 106, 0.06);
+  box-shadow: 0 0 0 4px rgba(201, 168, 106, 0.12);
+}
+.mg-field--invalid input {
+  border-color: rgba(214, 122, 96, 0.7);
+}
+.mg-eye {
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.18s, background 0.18s;
+}
+.mg-eye:hover { color: var(--cream); background: rgba(255, 255, 255, 0.06); }
+
+.mg-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+}
+.mg-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+.mg-check input { accent-color: var(--gold); width: 0.95rem; height: 0.95rem; }
+.mg-link {
+  color: var(--gold);
+  text-decoration: none;
+  transition: color 0.18s;
+}
+.mg-link:hover { color: var(--gold-bright); }
+
+.mg-error {
+  margin-top: 0.9rem;
+  font-size: 0.8rem;
+  color: #e6a283;
+  min-height: 1rem;
+}
+
+.mg-submit {
+  position: relative;
+  width: 100%;
+  margin-top: 1.4rem;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+  border: 0;
+  border-radius: 11px;
+  cursor: pointer;
+  overflow: hidden;
+  background: linear-gradient(100deg, var(--gold-bright), var(--gold) 55%, #b8995a);
+  box-shadow: 0 12px 30px -12px rgba(201, 168, 106, 0.7);
+  transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s;
+}
+.mg-submit:hover { filter: brightness(1.05); box-shadow: 0 16px 34px -12px rgba(201, 168, 106, 0.85); }
+.mg-submit:active { transform: translateY(1px); }
+.mg-submit:disabled { cursor: progress; filter: saturate(0.6) brightness(0.85); }
+/* Shimmer sweep across the button. */
+.mg-submit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-130%);
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 70%
+  );
+}
+.mg-submit:not(:disabled):hover::after { animation: mg-shimmer 0.9s ease; }
+@keyframes mg-shimmer {
+  to { transform: translateX(130%); }
+}
+.mg-spinner {
+  display: inline-block;
+  width: 0.95rem;
+  height: 0.95rem;
+  margin-right: 0.5rem;
+  vertical-align: -2px;
+  border: 2px solid rgba(15, 15, 15, 0.35);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: mg-spin 0.7s linear infinite;
+}
+@keyframes mg-spin { to { transform: rotate(360deg); } }
+
+/* Success badge for the "reset link sent" state. */
+.mg-sent {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1.25rem;
+  border-radius: 50%;
+  color: var(--gold-bright);
+  background: rgba(201, 168, 106, 0.12);
+  border: 1px solid var(--line);
+  animation: mg-rise 0.5s ease both;
+}
+
+.mg-foot {
+  margin-top: 1.6rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ---- Responsive: stack the ticket, flip the perforation horizontal ------- */
+@media (max-width: 720px) {
+  .mg-ticket { grid-template-columns: 1fr; width: min(440px, 100%); }
+  .mg-stub { padding: 2rem 1.75rem; gap: 1.5rem; }
+  .mg-perf {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: auto;
+    height: 1px;
+    background-image: linear-gradient(90deg, var(--line) 55%, transparent 55%);
+    background-size: 12px 1px;
+  }
+  .mg-notch { top: auto; }
+  .mg-notch--top { left: -8px; bottom: -8px; right: auto; }
+  .mg-notch--bottom { right: -8px; bottom: -8px; }
+  .mg-form { padding: 2rem 1.75rem; }
+}
+
+/* ---- Respect reduced-motion --------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .mg-glow { animation: none; }
+  .mg-ticket, .mg-field { animation: none; opacity: 1; }
+  .mg-submit:hover::after { animation: none; }
+}
