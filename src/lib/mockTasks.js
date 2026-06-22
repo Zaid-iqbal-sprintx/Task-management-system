@@ -136,3 +136,12 @@ export const PRIORITY_META = {
   medium: { label: "Medium", rank: 1 },
   low: { label: "Low", rank: 0 },
 };
+
+// The team — used to populate the assignee picker on the New Task form.
+export const PEOPLE = [
+  { name: "Sara Khan", initials: "SK" },
+  { name: "Zaid Ali", initials: "ZA" },
+  { name: "Maya Reed", initials: "MR" },
+  { name: "Omar Yusuf", initials: "OY" },
+  { name: "Lena Park", initials: "LP" },
+];
