@@ -465,9 +465,10 @@ body {
   box-shadow: 0 4px 14px -4px rgba(201, 168, 106, 0.6);
 }
 .tk-nav-name {
-  font-size: 1.05rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.25rem;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.01em;
 }
 .tk-nav-links {
   display: flex;
@@ -553,6 +554,78 @@ body {
   background: radial-gradient(circle, rgba(94, 75, 67, 0.55), transparent 62%);
 }
 .tk > *:not(.tk-aura) { position: relative; z-index: 1; }
+
+/* ---- Loading screen — the "Taskify" wordmark fills in --------------------- */
+.tk-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 62vh;
+  text-align: center;
+  animation: mg-rise 0.4s ease both;
+}
+/* The base sits dim; a gold copy on ::before reveals across it left-to-right. */
+.tk-loader-word {
+  position: relative;
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(2.6rem, 9vw, 5rem);
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: rgba(237, 230, 216, 0.1);
+}
+.tk-loader-word::before {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: transparent;
+  background: linear-gradient(100deg, var(--gold-bright), var(--gold) 55%, #b8995a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  /* clip-path reveals the gold word from left to right, then resets. */
+  clip-path: inset(0 100% 0 0);
+  animation: tk-fill 1.8s cubic-bezier(0.5, 0, 0.2, 1) infinite;
+}
+.tk-loader-bar {
+  width: 12rem;
+  height: 3px;
+  margin-top: 2rem;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.tk-loader-bar span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+  animation: tk-sweep 1.3s ease-in-out infinite;
+}
+.tk-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes tk-fill {
+  0% { clip-path: inset(0 100% 0 0); }
+  55% { clip-path: inset(0 0 0 0); }
+  85% { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(0 0 0 100%); }
+}
+@keyframes tk-sweep {
+  0% { transform: translateX(-130%); }
+  100% { transform: translateX(330%); }
+}
 
 /* ---- Header -------------------------------------------------------------- */
 .tk-top {

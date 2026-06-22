@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { TASKS, STATUS_META, PRIORITY_META } from "@/lib/mockTasks";
 
@@ -21,6 +21,14 @@ export default function TasksPage() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [priority, setPriority] = useState("all");
+
+  // Brief branded loader on first paint so arriving from login feels like a
+  // real "signing you in" handoff, then the board reveals itself.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 1400);
+    return () => clearTimeout(t);
+  }, []);
 
   // Stats are always computed from the full list, not the filtered view.
   const stats = useMemo(() => {
@@ -49,6 +57,8 @@ export default function TasksPage() {
       );
     }).sort((a, b) => PRIORITY_META[b.priority].rank - PRIORITY_META[a.priority].rank);
   }, [query, status, priority]);
+
+  if (!ready) return <DashboardLoader />;
 
   return (
     <div className="tk">
@@ -186,6 +196,20 @@ export default function TasksPage() {
 }
 
 /* ------------------------------ sub-components ----------------------------- */
+
+function DashboardLoader() {
+  return (
+    <div className="tk-loader" role="status" aria-live="polite">
+      <h1 className="tk-loader-word" data-text="Taskify">
+        Taskify
+      </h1>
+      <div className="tk-loader-bar" aria-hidden="true">
+        <span />
+      </div>
+      <span className="tk-sr">Loading dashboard…</span>
+    </div>
+  );
+}
 
 function StatCard({ label, value, tone, icon, foot, progress }) {
   return (
