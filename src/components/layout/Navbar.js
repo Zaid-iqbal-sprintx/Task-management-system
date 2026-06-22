@@ -21,14 +21,15 @@ export default function Navbar() {
   }
 
   return (
-    <header className="border-b border-slate-200 bg-white">
-      <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        {/* Brand / home link */}
-        <Link href="/tasks" className="text-lg font-semibold text-slate-900">
-          📋 Task Manager
+    <header className="tk-nav">
+      <nav className="tk-nav-inner">
+        {/* Brand / home link — matches the login wordmark identity */}
+        <Link href="/tasks" className="tk-nav-brand">
+          <span className="tk-nav-mark">T</span>
+          <span className="tk-nav-name">Taskify</span>
         </Link>
 
-        <div className="flex items-center gap-1">
+        <div className="tk-nav-links">
           {NAV_LINKS.map((link) => {
             // "New Task" highlights only on its exact path. "Tasks" highlights
             // on the list and any detail/edit page, but not on "New Task".
@@ -42,25 +43,17 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={[
-                  "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                ].join(" ")}
+                className={`tk-nav-link${isActive ? " is-active" : ""}`}
               >
                 {link.label}
               </Link>
             );
           })}
-
-          <button
-            onClick={handleLogout}
-            className="ml-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600"
-          >
-            Logout
-          </button>
         </div>
+
+        <button onClick={handleLogout} className="tk-nav-logout">
+          Logout
+        </button>
       </nav>
     </header>
   );
