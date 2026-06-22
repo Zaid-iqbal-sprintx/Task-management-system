@@ -26,9 +26,9 @@ export const metadata = {
   description: "Milestone 1 — Task Management App frontend (mock data)",
 };
 
-// Root layout: wraps every page in the app. For this milestone we only ship the
-// App layout shell + navigation, plus the login page. <AppChrome> renders the
-// navbar app-wide but skips it on the auth screens (so login stays standalone).
+// Root layout: wraps every page in the app. PR 1 ships only the App layout
+// shell + navigation. <AppChrome> renders the navbar app-wide but skips it on
+// the auth screens, which render standalone.
 export default function RootLayout({ children }) {
   return (
     <html
