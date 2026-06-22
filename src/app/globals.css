@@ -902,7 +902,55 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   margin-bottom: 0.7rem;
+  min-height: 1.75rem;
+}
+.tk-card-row-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+/* Edit / Delete actions — hidden until the card is hovered or focused. */
+.tk-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.tk-card:hover .tk-card-actions,
+.tk-card:focus-within .tk-card-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+.tk-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.16s, background 0.16s, border-color 0.16s, transform 0.12s;
+}
+.tk-icon-btn:hover {
+  color: var(--gold-bright);
+  background: rgba(201, 168, 106, 0.14);
+  border-color: rgba(201, 168, 106, 0.4);
+}
+.tk-icon-btn:active { transform: translateY(1px); }
+.tk-icon-btn--danger:hover {
+  color: var(--red);
+  background: rgba(224, 138, 111, 0.14);
+  border-color: rgba(224, 138, 111, 0.45);
+}
+/* Touch devices have no hover — keep the actions visible there. */
+@media (hover: none) {
+  .tk-card-actions { opacity: 1; transform: none; }
 }
 .tk-card-id {
   font-family: var(--font-geist-mono), monospace;
