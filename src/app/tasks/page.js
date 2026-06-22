@@ -68,7 +68,7 @@ export default function TasksPage() {
       {/* Greeting + primary action */}
       <header className="tk-top">
         <div>
-          <p className="tk-eyebrow">Sunday · June 22, 2026</p>
+          <p className="tk-eyebrow">Monday · June 22, 2026</p>
           <h1 className="tk-title">
             Good evening, <em>Zaid</em>
           </h1>
@@ -247,25 +247,6 @@ function TaskCard({ task, index }) {
             {STATUS_META[task.status].label}
           </span>
         </span>
-
-        <span className="tk-card-actions">
-          <button
-            type="button"
-            className="tk-icon-btn"
-            aria-label={`Edit ${task.title}`}
-            title="Edit"
-          >
-            <EditIcon />
-          </button>
-          <button
-            type="button"
-            className="tk-icon-btn tk-icon-btn--danger"
-            aria-label={`Delete ${task.title}`}
-            title="Delete"
-          >
-            <TrashIcon />
-          </button>
-        </span>
       </div>
 
       <h3 className="tk-card-title">{task.title}</h3>
@@ -404,22 +385,6 @@ function CalendarIcon() {
     <svg {...iconProps()} width="14" height="14">
       <rect x="3" y="4" width="18" height="18" rx="2" />
       <path d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
-}
-function EditIcon() {
-  return (
-    <svg {...iconProps()} width="15" height="15">
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  );
-}
-function TrashIcon() {
-  return (
-    <svg {...iconProps()} width="15" height="15">
-      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-      <path d="M10 11v6M14 11v6" />
     </svg>
   );
 }
