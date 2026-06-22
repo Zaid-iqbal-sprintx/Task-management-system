@@ -1,6 +1,6 @@
-import Placeholder from "@/components/Placeholder";
+import TaskForm from "@/components/TaskForm";
 
 // Rendered inside the app shell (navbar + main) via AppChrome.
 export default function NewTaskPage() {
-  return <Placeholder title="New Task" note="Coming in a later milestone." />;
+  return <TaskForm mode="create" />;
 }

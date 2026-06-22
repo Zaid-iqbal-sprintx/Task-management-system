@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { TASKS, STATUS_META, PRIORITY_META } from "@/lib/mockTasks";
+import { STATUS_META, PRIORITY_META } from "@/lib/mockTasks";
+import { loadTasks } from "@/lib/taskStore";
 
 // The Midnight Gold dashboard. Reads dummy tasks from src/lib/mockTasks.js and
 // lets you search, filter by status, and filter by priority — all client-side.
@@ -22,30 +23,38 @@ export default function TasksPage() {
   const [status, setStatus] = useState("all");
   const [priority, setPriority] = useState("all");
 
+  // Tasks come from the localStorage-backed store (seeded from mock data), so
+  // edits made on the form show up here. The store is browser-only, so we load
+  // after mount — the loader below covers the brief empty first render.
+  const [tasks, setTasks] = useState([]);
+
   // Brief branded loader on first paint so arriving from login feels like a
   // real "signing you in" handoff, then the board reveals itself.
   const [ready, setReady] = useState(false);
   useEffect(() => {
+    setTasks(loadTasks());
     const t = setTimeout(() => setReady(true), 1400);
     return () => clearTimeout(t);
   }, []);
 
   // Stats are always computed from the full list, not the filtered view.
   const stats = useMemo(() => {
-    const total = TASKS.length;
-    const inProgress = TASKS.filter((t) => t.status === "in-progress").length;
-    const done = TASKS.filter((t) => t.status === "done").length;
-    const overdue = TASKS.filter(
+    const total = tasks.length;
+    const inProgress = tasks.filter((t) => t.status === "in-progress").length;
+    const done = tasks.filter((t) => t.status === "done").length;
+    const overdue = tasks.filter(
       (t) => t.status !== "done" && t.due < TODAY
     ).length;
     return { total, inProgress, done, overdue };
-  }, []);
+  }, [tasks]);
 
-  const completion = Math.round((stats.done / stats.total) * 100);
+  const completion = stats.total
+    ? Math.round((stats.done / stats.total) * 100)
+    : 0;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return TASKS.filter((t) => {
+    return tasks.filter((t) => {
       if (status !== "all" && t.status !== status) return false;
       if (priority !== "all" && t.priority !== priority) return false;
       if (!q) return true;
@@ -56,7 +65,7 @@ export default function TasksPage() {
         t.tags.some((tag) => tag.toLowerCase().includes(q))
       );
     }).sort((a, b) => PRIORITY_META[b.priority].rank - PRIORITY_META[a.priority].rank);
-  }, [query, status, priority]);
+  }, [tasks, query, status, priority]);
 
   if (!ready) return <DashboardLoader />;
 
@@ -247,6 +256,14 @@ function TaskCard({ task, index }) {
             {STATUS_META[task.status].label}
           </span>
         </span>
+        <Link
+          href={`/tasks/${task.id}/edit`}
+          className="tk-card-edit"
+          aria-label={`Edit ${task.title}`}
+        >
+          <PencilIcon />
+          Edit
+        </Link>
       </div>
 
       <h3 className="tk-card-title">{task.title}</h3>
@@ -326,6 +343,14 @@ function PlusIcon() {
   return (
     <svg {...iconProps()}>
       <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+function PencilIcon() {
+  return (
+    <svg {...iconProps()} width="13" height="13">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
     </svg>
   );
 }

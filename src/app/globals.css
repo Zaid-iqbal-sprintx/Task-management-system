@@ -567,6 +567,33 @@ body {
   letter-spacing: 0.06em;
   color: var(--muted);
 }
+/* Edit link — quiet by default, warms to gold on hover/focus. */
+.tk-card-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.03);
+  opacity: 0;
+  transition: opacity 0.18s ease, color 0.18s ease, border-color 0.18s ease,
+    background 0.18s ease;
+}
+.tk-card:hover .tk-card-edit,
+.tk-card-edit:focus-visible {
+  opacity: 1;
+}
+.tk-card-edit:hover,
+.tk-card-edit:focus-visible {
+  color: var(--gold-bright);
+  border-color: rgba(201, 168, 106, 0.4);
+  background: rgba(201, 168, 106, 0.12);
+}
 .tk-badge {
   padding: 0.2rem 0.55rem;
   font-size: 0.68rem;
@@ -721,19 +748,290 @@ body {
 }
 .tk-empty-reset:hover { background: rgba(201, 168, 106, 0.2); }
 
+/* ===========================================================================
+   Create / Edit Task form — Midnight Gold. Inherits the theme tokens from
+   .tk-shell; scoped under .tk-form* so it stays self-contained.
+   =========================================================================== */
+.tk-form-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  max-width: 46rem;
+  margin: 0 auto 1.6rem;
+  animation: mg-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.tk-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  transition: color 0.18s, background 0.18s, border-color 0.18s;
+}
+.tk-back:hover {
+  color: var(--cream);
+  border-color: rgba(201, 168, 106, 0.4);
+  background: var(--panel-2);
+}
+
+.tk-form {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 1.75rem;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0)),
+    rgba(20, 20, 20, 0.55);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 50px -32px rgba(0, 0, 0, 0.85);
+  animation: mg-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tk-field { margin-bottom: 1.25rem; }
+.tk-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1rem;
+}
+.tk-grid-2 .tk-field { margin-bottom: 1.25rem; }
+
+.tk-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.tk-label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--cream);
+}
+.tk-req { color: var(--gold); }
+.tk-counter {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.tk-counter.is-over { color: var(--red); }
+
+/* Text inputs + textarea share the search field's look. */
+.tk-input,
+.tk-textarea {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--cream);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+.tk-textarea { resize: vertical; min-height: 5.5rem; line-height: 1.5; }
+.tk-input::placeholder,
+.tk-textarea::placeholder { color: var(--muted); }
+.tk-input:focus,
+.tk-textarea:focus {
+  border-color: rgba(201, 168, 106, 0.55);
+  background: rgba(201, 168, 106, 0.06);
+  box-shadow: 0 0 0 4px rgba(201, 168, 106, 0.1);
+}
+/* The native date picker indicator is dark by default — lighten it. */
+.tk-input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7) sepia(1) saturate(2) hue-rotate(5deg);
+  cursor: pointer;
+}
+
+.tk-input.is-invalid,
+.tk-textarea.is-invalid,
+.tk-select select.is-invalid,
+.tk-chips.is-invalid {
+  border-color: rgba(224, 138, 111, 0.6);
+}
+.tk-input.is-invalid:focus,
+.tk-textarea.is-invalid:focus,
+.tk-chips.is-invalid:focus-within {
+  box-shadow: 0 0 0 4px rgba(224, 138, 111, 0.12);
+}
+
+/* Let the dashboard's .tk-select stretch full width inside a field. */
+.tk-select--block { display: flex; }
+.tk-select--block select { width: 100%; height: auto; padding: 0.7rem 2.1rem 0.7rem 0.85rem; }
+
+/* Error + hint text. */
+.tk-error {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--red);
+}
+.tk-error svg { flex-shrink: 0; }
+.tk-hint {
+  margin-top: 0.45rem;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+/* Segmented priority control. */
+.tk-seg {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.3rem;
+  padding: 0.3rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.tk-seg-btn {
+  padding: 0.5rem 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: color 0.16s, background 0.16s, box-shadow 0.16s;
+}
+.tk-seg-btn:hover { color: var(--cream); background: rgba(255, 255, 255, 0.04); }
+.tk-seg-btn.is-active { color: var(--ink); }
+.tk-seg-btn--low.is-active { background: linear-gradient(100deg, var(--muted), #6b6256); color: var(--cream); }
+.tk-seg-btn--medium.is-active { background: linear-gradient(100deg, #a8c4dd, #5e7790); }
+.tk-seg-btn--high.is-active { background: linear-gradient(100deg, var(--gold-bright), var(--gold) 60%, #b8995a); }
+.tk-seg-btn--urgent.is-active { background: linear-gradient(100deg, #e7a88f, var(--red)); color: var(--cream); }
+
+/* Tag chip input. */
+.tk-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  cursor: text;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+.tk-chips:focus-within {
+  border-color: rgba(201, 168, 106, 0.55);
+  background: rgba(201, 168, 106, 0.06);
+  box-shadow: 0 0 0 4px rgba(201, 168, 106, 0.1);
+}
+.tk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.3rem 0.2rem 0.55rem;
+  font-size: 0.76rem;
+  color: var(--gold-bright);
+  background: rgba(201, 168, 106, 0.14);
+  border: 1px solid rgba(201, 168, 106, 0.28);
+  border-radius: 8px;
+}
+.tk-chip-x {
+  display: grid;
+  place-items: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  font-size: 0.95rem;
+  line-height: 1;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.tk-chip-x:hover { background: rgba(201, 168, 106, 0.25); color: var(--cream); }
+.tk-chip-input {
+  flex: 1;
+  min-width: 7rem;
+  padding: 0.25rem 0.15rem;
+  font-size: 0.88rem;
+  color: var(--cream);
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+.tk-chip-input::placeholder { color: var(--muted); }
+
+/* Actions. */
+.tk-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
+}
+.tk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.7rem 1.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 11px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s, background 0.18s, color 0.18s;
+}
+.tk-btn--ghost {
+  color: var(--muted);
+  background: transparent;
+  border-color: var(--line);
+}
+.tk-btn--ghost:hover { color: var(--cream); background: var(--panel); border-color: rgba(201, 168, 106, 0.4); }
+.tk-btn--primary {
+  color: var(--ink);
+  background: linear-gradient(100deg, var(--gold-bright), var(--gold) 55%, #b8995a);
+  box-shadow: 0 12px 28px -12px rgba(201, 168, 106, 0.7);
+}
+.tk-btn--primary:hover { filter: brightness(1.05); box-shadow: 0 16px 32px -12px rgba(201, 168, 106, 0.85); }
+.tk-btn--primary:active { transform: translateY(1px); }
+.tk-btn--primary:disabled { filter: saturate(0.6) brightness(0.95); cursor: progress; box-shadow: none; }
+
+.tk-spin { animation: tk-rotate 0.8s linear infinite; }
+@keyframes tk-rotate { to { transform: rotate(360deg); } }
+
 /* ---- Responsive ---------------------------------------------------------- */
 @media (max-width: 860px) {
   .tk-stats { grid-template-columns: repeat(2, 1fr); }
   .tk-top { flex-direction: column; align-items: stretch; }
   .tk-cta { align-self: flex-start; }
 }
+@media (max-width: 620px) {
+  .tk-grid-2 { grid-template-columns: 1fr; gap: 0; }
+  .tk-form { padding: 1.3rem; }
+  .tk-form-head { flex-direction: column; align-items: stretch; }
+  .tk-back { align-self: flex-start; }
+  .tk-seg { grid-template-columns: 1fr 1fr; }
+}
 @media (max-width: 520px) {
   .tk-stats { grid-template-columns: 1fr 1fr; }
   .tk-toolbar { flex-direction: column; align-items: stretch; }
   .tk-tabs { overflow-x: auto; }
+  .tk-form-actions { flex-direction: column-reverse; }
+  .tk-btn { justify-content: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tk-top, .tk-stat, .tk-card { animation: none; opacity: 1; }
+  .tk-top, .tk-stat, .tk-card, .tk-form, .tk-form-head { animation: none; opacity: 1; }
   .tk-card:hover, .tk-nav-link:hover { transform: none; }
+  .tk-spin { animation: none; }
 }
