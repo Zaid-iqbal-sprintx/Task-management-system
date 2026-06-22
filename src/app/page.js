@@ -1,6 +1,12 @@
-import { redirect } from "next/navigation";
+import Placeholder from "@/components/Placeholder";
 
-// The home route ("/") has no page of its own — send people to the task list.
+// Home route. PR 1 ships only the App layout + navigation, so this is a
+// placeholder rendered inside the app shell.
 export default function Home() {
-  redirect("/tasks");
+  return (
+    <Placeholder
+      title="Dashboard"
+      note="App layout and navigation only. Feature screens arrive in later milestones."
+    />
+  );
 }
