@@ -1,6 +1,5 @@
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
-import AppChrome from "@/components/layout/AppChrome";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,9 +25,9 @@ export const metadata = {
   description: "Milestone 1 — Task Management App frontend (mock data)",
 };
 
-// Root layout: wraps every page in the app. For this milestone we only ship the
-// App layout shell + navigation, plus the login page. <AppChrome> renders the
-// navbar app-wide but skips it on the auth screens (so login stays standalone).
+// Root layout: wraps every page in the app. The <Navbar> is NOT here on
+// purpose — we only want it on the task pages, not on the login screen.
+// (The task pages get the navbar from src/app/tasks/layout.js.)
 export default function RootLayout({ children }) {
   return (
     <html
@@ -40,7 +39,7 @@ export default function RootLayout({ children }) {
         className="min-h-screen font-sans antialiased"
         suppressHydrationWarning
       >
-        <AppChrome>{children}</AppChrome>
+        {children}
       </body>
     </html>
   );
