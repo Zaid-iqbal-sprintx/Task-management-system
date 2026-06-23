@@ -88,3 +88,11 @@ export function upsertTask(values, existingId) {
   persist([task, ...tasks]);
   return task.id;
 }
+
+// Remove a task by id and persist the result. Returns the trimmed list so the
+// caller can update its own state without a second loadTasks() round-trip.
+export function deleteTask(id) {
+  const next = loadTasks().filter((t) => t.id !== id);
+  persist(next);
+  return next;
+}

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { STATUS_META, PRIORITY_META } from "@/lib/mockTasks";
-import { loadTasks } from "@/lib/taskStore";
+import { loadTasks, deleteTask } from "@/lib/taskStore";
 
 // The Midnight Gold dashboard. Reads dummy tasks from src/lib/mockTasks.js and
 // lets you search, filter by status, and filter by priority — all client-side.
@@ -27,6 +28,17 @@ export default function TasksPage() {
   // edits made on the form show up here. The store is browser-only, so we load
   // after mount — the loader below covers the brief empty first render.
   const [tasks, setTasks] = useState([]);
+
+  // The task awaiting delete confirmation (null when the dialog is closed).
+  const [pendingDelete, setPendingDelete] = useState(null);
+
+  // Persist the delete in localStorage and drop it from the in-memory list so
+  // the grid + stats update without a reload, then close the dialog.
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    setTasks(deleteTask(pendingDelete.id));
+    setPendingDelete(null);
+  }
 
   // Brief branded loader on first paint so arriving from login feels like a
   // real "signing you in" handoff, then the board reveals itself.
@@ -180,7 +192,12 @@ export default function TasksPage() {
       {filtered.length > 0 ? (
         <section className="tk-grid">
           {filtered.map((task, i) => (
-            <TaskCard key={task.id} task={task} index={i} />
+            <TaskCard
+              key={task.id}
+              task={task}
+              index={i}
+              onDelete={() => setPendingDelete(task)}
+            />
           ))}
         </section>
       ) : (
@@ -199,6 +216,14 @@ export default function TasksPage() {
             Reset filters
           </button>
         </div>
+      )}
+
+      {pendingDelete && (
+        <DeleteDialog
+          task={pendingDelete}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={confirmDelete}
+        />
       )}
     </div>
   );
@@ -238,7 +263,7 @@ function StatCard({ label, value, tone, icon, foot, progress }) {
   );
 }
 
-function TaskCard({ task, index }) {
+function TaskCard({ task, index, onDelete }) {
   const overdue = task.status !== "done" && task.due < TODAY;
   const pct = Math.round((task.subtasks.done / task.subtasks.total) * 100);
 
@@ -256,14 +281,25 @@ function TaskCard({ task, index }) {
             {STATUS_META[task.status].label}
           </span>
         </span>
-        <Link
-          href={`/tasks/${task.id}/edit`}
-          className="tk-card-edit"
-          aria-label={`Edit ${task.title}`}
-        >
-          <PencilIcon />
-          Edit
-        </Link>
+        <span className="tk-card-actions">
+          <Link
+            href={`/tasks/${task.id}/edit`}
+            className="tk-card-edit"
+            aria-label={`Edit ${task.title}`}
+          >
+            <PencilIcon />
+            Edit
+          </Link>
+          <button
+            type="button"
+            className="tk-card-delete"
+            onClick={onDelete}
+            aria-label={`Delete ${task.title}`}
+          >
+            <TrashIcon />
+            Delete
+          </button>
+        </span>
       </div>
 
       <h3 className="tk-card-title">{task.title}</h3>
@@ -314,6 +350,57 @@ function TaskCard({ task, index }) {
   );
 }
 
+// Confirmation dialog shown before a task is permanently removed. Closes on
+// backdrop click or Escape; the actual delete only happens on "Delete task".
+function DeleteDialog({ task, onCancel, onConfirm }) {
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  // Rendered into <body> via a portal so the fixed overlay is positioned
+  // against the viewport, never trapped inside the dashboard's layout.
+  return createPortal(
+    <div
+      className="tk-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tk-delete-title"
+      onClick={onCancel}
+    >
+      <div className="tk-modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="tk-modal-icon" aria-hidden="true">
+          <TrashIcon />
+        </div>
+        <h2 id="tk-delete-title" className="tk-modal-title">
+          Delete this task?
+        </h2>
+        <p className="tk-modal-text">
+          <strong>{task.title}</strong> ({task.id}) will be removed for good.
+          This can&rsquo;t be undone.
+        </p>
+        <div className="tk-modal-actions">
+          <button type="button" className="tk-modal-cancel" onClick={onCancel}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="tk-modal-confirm"
+            onClick={onConfirm}
+            autoFocus
+          >
+            Delete task
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function formatDue(iso) {
   const [, m, d] = iso.split("-").map(Number);
   const months = [
@@ -351,6 +438,14 @@ function PencilIcon() {
     <svg {...iconProps()} width="13" height="13">
       <path d="M12 20h9" />
       <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+function TrashIcon() {
+  return (
+    <svg {...iconProps()} width="13" height="13">
+      <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6" />
+      <path d="M10 11v6M14 11v6" />
     </svg>
   );
 }
