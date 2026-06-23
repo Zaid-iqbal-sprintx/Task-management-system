@@ -14,7 +14,10 @@ export function loadTasks() {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return TASKS;
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length ? parsed : TASKS;
+    // An empty array is a valid, intentional state (the user deleted every
+    // task) — respect it instead of falling back to the seed, otherwise the
+    // mock tasks reappear after a "delete all" + reload.
+    return Array.isArray(parsed) ? parsed : TASKS;
   } catch {
     return TASKS;
   }
@@ -87,4 +90,12 @@ export function upsertTask(values, existingId) {
   const task = toTask(values, { id: nextId(tasks) });
   persist([task, ...tasks]);
   return task.id;
+}
+
+// Remove a task by id and persist the result. Returns the trimmed list so the
+// caller can update its own state without a second loadTasks() round-trip.
+export function deleteTask(id) {
+  const next = loadTasks().filter((t) => t.id !== id);
+  persist(next);
+  return next;
 }
