@@ -14,7 +14,10 @@ export function loadTasks() {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return TASKS;
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length ? parsed : TASKS;
+    // An empty array is a valid, intentional state (the user deleted every
+    // task) — respect it instead of falling back to the seed, otherwise the
+    // mock tasks reappear after a "delete all" + reload.
+    return Array.isArray(parsed) ? parsed : TASKS;
   } catch {
     return TASKS;
   }
