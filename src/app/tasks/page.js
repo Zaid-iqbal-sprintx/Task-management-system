@@ -1,15 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { STATUS_META, PRIORITY_META } from "@/lib/mockTasks";
 import { loadTasks, deleteTask } from "@/lib/taskStore";
 
 // The Midnight Gold dashboard. Loads tasks from the backend (via taskStore →
-// api), then lets you search, filter by status, and filter by priority — all
-// client-side over the fetched list. Styling lives in globals.css under the
-// scoped .tk-* classes.
+// api). Status and priority filtering run server-side (re-fetched as query
+// params when they change); title search runs client-side over the fetched
+// board. The stat cards are sourced from a separate unfiltered fetch so the
+// totals stay whole even while the board is narrowed. Styling lives in
+// globals.css under the scoped .tk-* classes.
 
 const STATUS_TABS = [
   { key: "all", label: "All" },
@@ -25,12 +27,24 @@ export default function TasksPage() {
   const [status, setStatus] = useState("all");
   const [priority, setPriority] = useState("all");
 
-  // Tasks come from the backend. `ready` gates the branded loader (false while
-  // the fetch is in flight); `error` holds a load failure so we can offer a
-  // retry instead of a silently empty board.
+  // Two task sources with different jobs:
+  //   • allTasks — the full unfiltered list, used only for the stat cards so
+  //     the totals stay whole regardless of the active filter.
+  //   • tasks    — the board, fetched with the server-side status/priority
+  //     filters applied. Title search narrows this further, client-side.
+  const [allTasks, setAllTasks] = useState([]);
   const [tasks, setTasks] = useState([]);
+
+  // `ready` gates the branded loader for the first paint only; `error` holds an
+  // initial-load failure so we can offer a retry instead of an empty board.
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
+
+  // A filter change re-fetches the board. `refreshing` drives a non-blocking
+  // busy state (the toolbar stays usable); `boardError` holds a refetch failure
+  // without tearing down the whole dashboard.
+  const [refreshing, setRefreshing] = useState(false);
+  const [boardError, setBoardError] = useState(null);
 
   // The task awaiting delete confirmation (null when the dialog is closed),
   // plus in-flight + error state for the delete request itself.
@@ -38,12 +52,29 @@ export default function TasksPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
 
-  // Load (or reload) the board. Re-runnable so the error state can offer retry.
-  const refresh = useCallback(async () => {
+  // Fetch the board for the current status/priority filters. Re-runnable so the
+  // board error state can offer a retry.
+  const refreshBoard = useCallback(async () => {
+    setRefreshing(true);
+    setBoardError(null);
+    try {
+      setTasks(await loadTasks({ status, priority }));
+    } catch (err) {
+      setBoardError(err.message || "Couldn't load tasks.");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [status, priority]);
+
+  // Initial load: pull the unfiltered list once (it seeds both the stats and
+  // the board, since filters start at "all"). Re-runnable for the retry button.
+  const loadInitial = useCallback(async () => {
     setReady(false);
     setError(null);
     try {
-      setTasks(await loadTasks());
+      const all = await loadTasks();
+      setAllTasks(all);
+      setTasks(all);
     } catch (err) {
       setError(err.message || "Couldn't load tasks.");
     } finally {
@@ -52,12 +83,23 @@ export default function TasksPage() {
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    loadInitial();
+  }, [loadInitial]);
 
-  // Delete on the server, then drop it from the in-memory list so the grid +
-  // stats update without a reload. Keep the dialog open on failure so the
-  // message is visible and the user can retry or cancel.
+  // Re-fetch the board when a server-side filter changes — but skip the first
+  // run, which the initial load already covered, to avoid a duplicate request.
+  const firstFilterRun = useRef(true);
+  useEffect(() => {
+    if (firstFilterRun.current) {
+      firstFilterRun.current = false;
+      return;
+    }
+    refreshBoard();
+  }, [refreshBoard]);
+
+  // Delete on the server, then drop it from both lists so the grid + stats
+  // update without a reload. Keep the dialog open on failure so the message is
+  // visible and the user can retry or cancel.
   async function confirmDelete() {
     if (!pendingDelete || deleting) return;
     setDeleting(true);
@@ -65,6 +107,7 @@ export default function TasksPage() {
     try {
       await deleteTask(pendingDelete.id);
       setTasks((prev) => prev.filter((t) => t.id !== pendingDelete.id));
+      setAllTasks((prev) => prev.filter((t) => t.id !== pendingDelete.id));
       setPendingDelete(null);
     } catch (err) {
       setDeleteError(err.message || "Couldn't delete the task.");
@@ -79,38 +122,42 @@ export default function TasksPage() {
     setDeleteError(null);
   }
 
-  // Stats are always computed from the full list, not the filtered view.
+  // Stats come from the full unfiltered list, never the filtered board.
   const stats = useMemo(() => {
-    const total = tasks.length;
-    const inProgress = tasks.filter((t) => t.status === "in-progress").length;
-    const done = tasks.filter((t) => t.status === "done").length;
-    const overdue = tasks.filter(
+    const total = allTasks.length;
+    const inProgress = allTasks.filter((t) => t.status === "in-progress").length;
+    const done = allTasks.filter((t) => t.status === "done").length;
+    const overdue = allTasks.filter(
       (t) => t.status !== "done" && t.due && t.due < TODAY
     ).length;
     return { total, inProgress, done, overdue };
-  }, [tasks]);
+  }, [allTasks]);
 
   const completion = stats.total
     ? Math.round((stats.done / stats.total) * 100)
     : 0;
 
+  // Status/priority are already applied server-side; here we only narrow by the
+  // title search and order by priority. Copy before sorting (sort mutates).
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return tasks.filter((t) => {
-      if (status !== "all" && t.status !== status) return false;
-      if (priority !== "all" && t.priority !== priority) return false;
-      if (!q) return true;
-      return (
-        t.title.toLowerCase().includes(q) ||
-        t.description.toLowerCase().includes(q) ||
-        t.id.toLowerCase().includes(q) ||
-        t.tags.some((tag) => tag.toLowerCase().includes(q))
-      );
-    }).sort((a, b) => PRIORITY_META[b.priority].rank - PRIORITY_META[a.priority].rank);
-  }, [tasks, query, status, priority]);
+    const matches = q
+      ? tasks.filter(
+          (t) =>
+            t.title.toLowerCase().includes(q) ||
+            t.description.toLowerCase().includes(q) ||
+            t.id.toLowerCase().includes(q) ||
+            t.tags.some((tag) => tag.toLowerCase().includes(q))
+        )
+      : tasks;
+    return [...matches].sort(
+      (a, b) => PRIORITY_META[b.priority].rank - PRIORITY_META[a.priority].rank
+    );
+  }, [tasks, query]);
+
 
   if (!ready) return <DashboardLoader />;
-  if (error) return <DashboardError message={error} onRetry={refresh} />;
+  if (error) return <DashboardError message={error} onRetry={loadInitial} />;
 
   return (
     <div className="tk">
@@ -219,9 +266,20 @@ export default function TasksPage() {
         </div>
       </section>
 
-      {/* Task grid */}
-      {filtered.length > 0 ? (
-        <section className="tk-grid">
+      {/* Task board. Re-fetches on a filter change: a failure shows an inline
+          error+retry (toolbar stays usable), otherwise the grid is marked busy
+          while the new results load so it doesn't read as "no matches". */}
+      {boardError ? (
+        <div className="tk-empty">
+          <div className="tk-empty-mark">!</div>
+          <h3>Couldn&rsquo;t update the board</h3>
+          <p>{boardError}</p>
+          <button className="tk-empty-reset" onClick={refreshBoard}>
+            Try again
+          </button>
+        </div>
+      ) : filtered.length > 0 ? (
+        <section className="tk-grid" aria-busy={refreshing}>
           {filtered.map((task, i) => (
             <TaskCard
               key={task.id}
@@ -231,21 +289,16 @@ export default function TasksPage() {
             />
           ))}
         </section>
+      ) : refreshing ? (
+        <div className="tk-empty" aria-busy="true">
+          <div className="tk-empty-mark">⋯</div>
+          <h3>Updating the board…</h3>
+        </div>
       ) : (
         <div className="tk-empty">
           <div className="tk-empty-mark">∅</div>
-          <h3>No tasks match your filters</h3>
-          <p>Try clearing the search or switching back to “All”.</p>
-          <button
-            className="tk-empty-reset"
-            onClick={() => {
-              setQuery("");
-              setStatus("all");
-              setPriority("all");
-            }}
-          >
-            Reset filters
-          </button>
+          <h3>No Task Right Now</h3>
+          <p>Create Your First Task</p>
         </div>
       )}
 

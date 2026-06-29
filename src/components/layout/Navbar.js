@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { logout } from "@/lib/auth";
 
 // The links shown in the navbar. Keeping them in an array means we can
 // render them in a loop instead of copy-pasting the same markup.
@@ -14,10 +15,11 @@ export default function Navbar() {
   const pathname = usePathname(); // current URL path, e.g. "/tasks/new"
   const router = useRouter();
 
-  // For Milestone 1 there is no real auth, so "logout" just sends the
-  // user back to the login screen.
+  // Clear the stored token/user, then send them to login. `replace` so the
+  // protected board isn't sitting in history for the back button.
   function handleLogout() {
-    router.push("/login");
+    logout();
+    router.replace("/login");
   }
 
   return (

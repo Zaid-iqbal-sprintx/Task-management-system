@@ -1,5 +1,8 @@
-// The app shell + navbar live in the root layout (via AppChrome), so this
-// nested layout is a passthrough — it exists only to group the /tasks routes.
+import RequireAuth from "@/components/RequireAuth";
+
+// The app shell + navbar live in the root layout (via AppChrome). This nested
+// layout groups the /tasks routes and gates them behind RequireAuth, so every
+// task screen (list, new, edit) requires a signed-in user.
 export default function TasksLayout({ children }) {
-  return children;
+  return <RequireAuth>{children}</RequireAuth>;
 }

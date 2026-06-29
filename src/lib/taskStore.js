@@ -61,10 +61,19 @@ function toPayload(values) {
   };
 }
 
-// All tasks, newest first (ordering is the server's responsibility). The API
-// wraps the list in { success, count, data: [...] } — unwrap and normalize.
-export async function loadTasks() {
-  const body = await api.get("/api/tasks");
+// Tasks, newest first (ordering is the server's responsibility). The API wraps
+// the list in { success, count, data: [...] } — unwrap and normalize.
+//
+// Status/priority filtering is done by the server via query params (see
+// API_CONTRACT.md and the backend's getTasks). Pass { status, priority } to
+// narrow the result; "all" (or omitted) means no filter on that field. Title
+// search has no server param, so callers filter the returned list themselves.
+export async function loadTasks(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.status && filters.status !== "all") params.set("status", filters.status);
+  if (filters.priority && filters.priority !== "all") params.set("priority", filters.priority);
+  const qs = params.toString();
+  const body = await api.get(`/api/tasks${qs ? `?${qs}` : ""}`);
   return (body.data ?? []).map(fromApi);
 }
 
