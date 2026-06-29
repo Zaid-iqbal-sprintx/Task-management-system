@@ -39,6 +39,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# docs
+API_CONTRACT.md
+
 # editor leftovers / duplicate lockfiles
 package-lock 2.json
 branch_structure.json
