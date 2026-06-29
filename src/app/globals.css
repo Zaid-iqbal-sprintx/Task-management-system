@@ -522,6 +522,13 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
   gap: 1.1rem;
 }
+/* A filter re-fetch is in flight — dim the stale grid and block clicks until
+   the fresh results arrive. */
+.tk-grid[aria-busy="true"] {
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
 .tk-card {
   position: relative;
   display: flex;
