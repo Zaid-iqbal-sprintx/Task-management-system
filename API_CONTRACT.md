@@ -8,8 +8,8 @@ base URL comes from `NEXT_PUBLIC_BACKEND_URL` in `.env`
 This documents the **actual** backend shape and how the frontend adapts to it
 (`src/lib/api.js` transport + `src/lib/taskStore.js` normalisation).
 
-> Scope: PR 7 covers task CRUD, unauthenticated. Auth (`/api/auth/*`) + JWT
-> protection lands in PR 9 — not built on either side yet.
+> Scope: task CRUD (PR 7) plus auth (`/api/auth/*`) and JWT-protected task
+> endpoints. The task routes now require a valid bearer token — see **Auth**.
 
 ## Response envelope
 
@@ -73,6 +73,33 @@ The client sends only editable fields (controller ignores anything else):
 | DELETE      | `/api/tasks/:id` | —           | `200`   | deleted `Task` |
 
 `:id` is the Mongo `_id`. The edit page treats a GET `404` as "task not found".
+
+All five task endpoints are **protected**: the request must carry
+`Authorization: Bearer <token>`. Without a valid token the backend replies
+`401` and the frontend's `RequireAuth` guard bounces the user to `/login`.
+
+## Auth
+
+Accounts live in MongoDB (`CRUD_BACKEND/src/models/User.js`); passwords are
+bcrypt-hashed and never returned. Register/login return a JWT the client stores
+(`src/lib/session.js` → localStorage) and replays on every task request
+(`src/lib/api.js`). The token is signed with `JWT_SECRET` and expires after
+`JWT_EXPIRES_IN` (default `7d`) — both set in the backend `.env`.
+
+| Method | Path                 | Body                        | Success | Response                |
+|--------|----------------------|-----------------------------|---------|-------------------------|
+| POST   | `/api/auth/register` | `{ name, email, password }` | `201`   | `{ token, data: User }` |
+| POST   | `/api/auth/login`    | `{ email, password }`       | `200`   | `{ token, data: User }` |
+| GET    | `/api/auth/me`       | — (bearer token)            | `200`   | `{ data: User }`        |
+
+```jsonc
+// User in responses — never includes the password hash
+{ "id": "665f…", "name": "Sara Khan", "email": "sara@example.com" }
+```
+
+Failure modes: duplicate email on register → `409`; bad credentials on login →
+`401` (same message whether the email is unknown or the password is wrong);
+missing/invalid/expired token on a protected route → `401`.
 
 ## CORS
 

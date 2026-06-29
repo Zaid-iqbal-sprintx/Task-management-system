@@ -2,7 +2,10 @@
 // base URL, JSON headers, and error handling so the rest of the app can call
 // api.get("/api/tasks") and get parsed JSON or a thrown ApiError — never a raw
 // Response. The backend runs as a separate service; its URL comes from
-// NEXT_PUBLIC_BACKEND_URL (see .env). Auth headers will be added here in PR 9.
+// NEXT_PUBLIC_BACKEND_URL (see .env). When the user is signed in, every request
+// carries their JWT as an Authorization header (see attachAuth below).
+
+import { getToken } from "./session";
 
 const BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 
@@ -16,12 +19,23 @@ export class ApiError extends Error {
   }
 }
 
+// Add the bearer token (when signed in) to a headers object. Anything the
+// caller passed in options.headers still wins, so this never clobbers an
+// explicit override.
+function attachAuth(headers) {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}`, ...headers } : headers;
+}
+
 async function request(path, options = {}) {
   let res;
   try {
     res = await fetch(`${BASE}${path}`, {
-      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
       ...options,
+      headers: attachAuth({
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      }),
     });
   } catch {
     // fetch only rejects on network failure / CORS / DNS — not on 4xx/5xx.

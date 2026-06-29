@@ -1028,6 +1028,99 @@ body {
   color: var(--muted);
 }
 
+/* ---- Auth screens (login / signup) -------------------------------------- */
+/* Rendered bare by AppChrome, so they sit directly on the body's dark canvas. */
+.tk-auth {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+}
+.tk-auth-card {
+  width: 100%;
+  max-width: 24rem;
+  padding: 2.25rem 2rem;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+.tk-auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1.5rem;
+}
+.tk-auth-word {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--cream);
+}
+.tk-auth-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--cream);
+}
+.tk-auth-sub {
+  margin-top: 0.35rem;
+  margin-bottom: 1.6rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+.tk-auth-form .tk-field { margin-bottom: 1.1rem; }
+.tk-field-label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cream);
+}
+/* Inputs mirror the shared .tk-input look so the forms feel native. */
+.tk-auth-form input {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--cream);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+.tk-auth-form input::placeholder { color: var(--muted); }
+.tk-auth-form input:focus {
+  border-color: rgba(201, 168, 106, 0.55);
+  background: rgba(201, 168, 106, 0.06);
+  box-shadow: 0 0 0 4px rgba(201, 168, 106, 0.1);
+}
+.tk-auth-submit {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  border: none;
+  border-radius: 11px;
+  cursor: pointer;
+  transition: transform 0.12s, opacity 0.18s;
+}
+.tk-auth-submit:hover { opacity: 0.92; }
+.tk-auth-submit:active { transform: translateY(1px); }
+.tk-auth-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+.tk-auth-alt {
+  margin-top: 1rem;
+  font-size: 0.84rem;
+  color: var(--muted);
+  text-align: center;
+}
+.tk-auth-alt a { color: var(--gold); text-decoration: none; }
+.tk-auth-alt a:hover { text-decoration: underline; }
+
 /* Segmented priority control. */
 .tk-seg {
   display: grid;
