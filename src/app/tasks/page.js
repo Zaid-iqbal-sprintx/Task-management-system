@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { STATUS_META, PRIORITY_META } from "@/lib/mockTasks";
 import { loadTasks, deleteTask } from "@/lib/taskStore";
 
-// The Midnight Gold dashboard. Reads dummy tasks from src/lib/mockTasks.js and
-// lets you search, filter by status, and filter by priority — all client-side.
-// Styling lives in globals.css under the scoped .tk-* classes.
+// The Midnight Gold dashboard. Loads tasks from the backend (via taskStore →
+// api), then lets you search, filter by status, and filter by priority — all
+// client-side over the fetched list. Styling lives in globals.css under the
+// scoped .tk-* classes.
 
 const STATUS_TABS = [
   { key: "all", label: "All" },
@@ -24,30 +25,59 @@ export default function TasksPage() {
   const [status, setStatus] = useState("all");
   const [priority, setPriority] = useState("all");
 
-  // Tasks come from the localStorage-backed store (seeded from mock data), so
-  // edits made on the form show up here. The store is browser-only, so we load
-  // after mount — the loader below covers the brief empty first render.
+  // Tasks come from the backend. `ready` gates the branded loader (false while
+  // the fetch is in flight); `error` holds a load failure so we can offer a
+  // retry instead of a silently empty board.
   const [tasks, setTasks] = useState([]);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState(null);
 
-  // The task awaiting delete confirmation (null when the dialog is closed).
+  // The task awaiting delete confirmation (null when the dialog is closed),
+  // plus in-flight + error state for the delete request itself.
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
-  // Persist the delete in localStorage and drop it from the in-memory list so
-  // the grid + stats update without a reload, then close the dialog.
-  function confirmDelete() {
-    if (!pendingDelete) return;
-    setTasks(deleteTask(pendingDelete.id));
-    setPendingDelete(null);
+  // Load (or reload) the board. Re-runnable so the error state can offer retry.
+  const refresh = useCallback(async () => {
+    setReady(false);
+    setError(null);
+    try {
+      setTasks(await loadTasks());
+    } catch (err) {
+      setError(err.message || "Couldn't load tasks.");
+    } finally {
+      setReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  // Delete on the server, then drop it from the in-memory list so the grid +
+  // stats update without a reload. Keep the dialog open on failure so the
+  // message is visible and the user can retry or cancel.
+  async function confirmDelete() {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteTask(pendingDelete.id);
+      setTasks((prev) => prev.filter((t) => t.id !== pendingDelete.id));
+      setPendingDelete(null);
+    } catch (err) {
+      setDeleteError(err.message || "Couldn't delete the task.");
+    } finally {
+      setDeleting(false);
+    }
   }
 
-  // Brief branded loader on first paint so arriving from login feels like a
-  // real "signing you in" handoff, then the board reveals itself.
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    setTasks(loadTasks());
-    const t = setTimeout(() => setReady(true), 1400);
-    return () => clearTimeout(t);
-  }, []);
+  // Reset the delete dialog's transient state whenever it closes/reopens.
+  function closeDelete() {
+    setPendingDelete(null);
+    setDeleteError(null);
+  }
 
   // Stats are always computed from the full list, not the filtered view.
   const stats = useMemo(() => {
@@ -55,7 +85,7 @@ export default function TasksPage() {
     const inProgress = tasks.filter((t) => t.status === "in-progress").length;
     const done = tasks.filter((t) => t.status === "done").length;
     const overdue = tasks.filter(
-      (t) => t.status !== "done" && t.due < TODAY
+      (t) => t.status !== "done" && t.due && t.due < TODAY
     ).length;
     return { total, inProgress, done, overdue };
   }, [tasks]);
@@ -80,6 +110,7 @@ export default function TasksPage() {
   }, [tasks, query, status, priority]);
 
   if (!ready) return <DashboardLoader />;
+  if (error) return <DashboardError message={error} onRetry={refresh} />;
 
   return (
     <div className="tk">
@@ -221,7 +252,9 @@ export default function TasksPage() {
       {pendingDelete && (
         <DeleteDialog
           task={pendingDelete}
-          onCancel={() => setPendingDelete(null)}
+          deleting={deleting}
+          error={deleteError}
+          onCancel={closeDelete}
           onConfirm={confirmDelete}
         />
       )}
@@ -245,6 +278,23 @@ function DashboardLoader() {
   );
 }
 
+// Shown when the initial task load fails — keeps the user from staring at an
+// empty board and lets them retry without a full page reload.
+function DashboardError({ message, onRetry }) {
+  return (
+    <div className="tk">
+      <div className="tk-empty">
+        <div className="tk-empty-mark">!</div>
+        <h3>Couldn&rsquo;t load your tasks</h3>
+        <p>{message}</p>
+        <button className="tk-empty-reset" onClick={onRetry}>
+          Try again
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function StatCard({ label, value, tone, icon, foot, progress }) {
   return (
     <article className={`tk-stat tk-stat--${tone}`}>
@@ -264,8 +314,9 @@ function StatCard({ label, value, tone, icon, foot, progress }) {
 }
 
 function TaskCard({ task, index, onDelete }) {
-  const overdue = task.status !== "done" && task.due < TODAY;
-  const pct = Math.round((task.subtasks.done / task.subtasks.total) * 100);
+  const overdue = task.status !== "done" && task.due && task.due < TODAY;
+  const { done, total } = task.subtasks;
+  const pct = total ? Math.round((done / total) * 100) : 0;
 
   return (
     <article
@@ -276,7 +327,6 @@ function TaskCard({ task, index, onDelete }) {
 
       <div className="tk-card-row">
         <span className="tk-card-row-left">
-          <span className="tk-card-id">{task.id}</span>
           <span className={`tk-badge tk-badge--${task.status}`}>
             {STATUS_META[task.status].label}
           </span>
@@ -327,10 +377,12 @@ function TaskCard({ task, index, onDelete }) {
       </div>
 
       <footer className="tk-card-foot">
-        <span className="tk-avatar" title={task.assignee.name}>
-          {task.assignee.initials}
+        <span className="tk-avatar" title={task.assignee.name || "Unassigned"}>
+          {task.assignee.initials || "—"}
         </span>
-        <span className="tk-assignee">{task.assignee.name}</span>
+        <span className="tk-assignee">
+          {task.assignee.name || "Unassigned"}
+        </span>
 
         <span className="tk-card-meta">
           <span className="tk-meta-item" title="Comments">
@@ -352,14 +404,14 @@ function TaskCard({ task, index, onDelete }) {
 
 // Confirmation dialog shown before a task is permanently removed. Closes on
 // backdrop click or Escape; the actual delete only happens on "Delete task".
-function DeleteDialog({ task, onCancel, onConfirm }) {
+function DeleteDialog({ task, deleting, error, onCancel, onConfirm }) {
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === "Escape") onCancel();
+      if (e.key === "Escape" && !deleting) onCancel();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel]);
+  }, [onCancel, deleting]);
 
   // Rendered into <body> via a portal so the fixed overlay is positioned
   // against the viewport, never trapped inside the dashboard's layout.
@@ -369,7 +421,7 @@ function DeleteDialog({ task, onCancel, onConfirm }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="tk-delete-title"
-      onClick={onCancel}
+      onClick={deleting ? undefined : onCancel}
     >
       <div className="tk-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="tk-modal-icon" aria-hidden="true">
@@ -379,20 +431,31 @@ function DeleteDialog({ task, onCancel, onConfirm }) {
           Delete this task?
         </h2>
         <p className="tk-modal-text">
-          <strong>{task.title}</strong> ({task.id}) will be removed for good.
-          This can&rsquo;t be undone.
+          <strong>{task.title}</strong> will be removed for good. This
+          can&rsquo;t be undone.
         </p>
+        {error && (
+          <p className="tk-error" role="alert">
+            {error}
+          </p>
+        )}
         <div className="tk-modal-actions">
-          <button type="button" className="tk-modal-cancel" onClick={onCancel}>
+          <button
+            type="button"
+            className="tk-modal-cancel"
+            onClick={onCancel}
+            disabled={deleting}
+          >
             Cancel
           </button>
           <button
             type="button"
             className="tk-modal-confirm"
             onClick={onConfirm}
+            disabled={deleting}
             autoFocus
           >
-            Delete task
+            {deleting ? "Deleting…" : "Delete task"}
           </button>
         </div>
       </div>
@@ -402,6 +465,7 @@ function DeleteDialog({ task, onCancel, onConfirm }) {
 }
 
 function formatDue(iso) {
+  if (!iso) return "No date";
   const [, m, d] = iso.split("-").map(Number);
   const months = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",

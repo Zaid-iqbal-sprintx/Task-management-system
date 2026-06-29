@@ -1,40 +1,14 @@
-// Client-side task persistence for Milestone 1. There's no backend yet, so we
-// keep created/edited tasks in localStorage and seed from the mock data on the
-// first visit. Everything here is browser-only — guard against SSR.
+// Task data access for Milestone 3. The browser-only localStorage layer from
+// Milestone 1 is gone — every function here now talks to the backend through
+// src/lib/api.js. The exported names and arguments are unchanged so the pages
+// and form didn't need rewiring beyond awaiting the (now async) results.
+//
+// The backend owns identity (the "TK-####" id) and the derived fields
+// (comments, subtasks). The client only sends the editable form fields, shaped
+// by toPayload below. See API_CONTRACT.md for the request/response shapes.
 
-import { TASKS, PEOPLE } from "./mockTasks";
-
-const KEY = "taskify.tasks.v1";
-
-// Read the current task list. Falls back to the seed data when nothing has been
-// saved yet (or when running on the server, where localStorage doesn't exist).
-export function loadTasks() {
-  if (typeof window === "undefined") return TASKS;
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    if (!raw) return TASKS;
-    const parsed = JSON.parse(raw);
-    // An empty array is a valid, intentional state (the user deleted every
-    // task) — respect it instead of falling back to the seed, otherwise the
-    // mock tasks reappear after a "delete all" + reload.
-    return Array.isArray(parsed) ? parsed : TASKS;
-  } catch {
-    return TASKS;
-  }
-}
-
-export function getTask(id) {
-  return loadTasks().find((t) => t.id === id) ?? null;
-}
-
-function persist(tasks) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(tasks));
-  } catch {
-    /* storage full or blocked — nothing we can do in a mock app */
-  }
-}
+import { PEOPLE } from "./mockTasks";
+import { api } from "./api";
 
 // Prefer the team roster's initials; otherwise derive them from the name.
 function initialsFor(name) {
@@ -49,21 +23,34 @@ function initialsFor(name) {
     .toUpperCase();
 }
 
-// Next "TK-####" id, one past the highest existing numeric suffix.
-function nextId(tasks) {
-  const nums = tasks
-    .map((t) => parseInt(String(t.id).replace(/\D/g, ""), 10))
-    .filter((n) => !Number.isNaN(n));
-  const max = nums.length ? Math.max(...nums) : 1000;
-  return `TK-${max + 1}`;
+// Map a backend task document to the shape the UI renders. The backend is
+// MongoDB-backed, so it returns `_id` (not `id`) and `due` as a full ISO
+// timestamp (nullable). It also doesn't track comments/subtasks, so we default
+// those display-only fields here. See API_CONTRACT.md.
+function fromApi(doc) {
+  return {
+    id: doc._id,
+    title: doc.title ?? "",
+    description: doc.description ?? "",
+    status: doc.status ?? "todo",
+    priority: doc.priority ?? "medium",
+    // Keep an absent assignee empty (not a fake "Unassigned" name) so the edit
+    // form's required-field validation still fires. The card supplies the
+    // "Unassigned" label for display only.
+    assignee: doc.assignee?.name
+      ? doc.assignee
+      : { name: "", initials: "" },
+    due: doc.due ? String(doc.due).slice(0, 10) : "", // ISO → "YYYY-MM-DD"
+    tags: Array.isArray(doc.tags) ? doc.tags : [],
+    comments: doc.comments ?? 0,
+    subtasks: doc.subtasks ?? { done: 0, total: 0 },
+  };
 }
 
-// Shape a card-ready task from raw form values.
-function toTask(values, base = {}) {
+// Shape the editable form values into the request body the API expects. The
+// server fills in everything else (id, timestamps) on create.
+function toPayload(values) {
   return {
-    comments: 0,
-    subtasks: { done: 0, total: 0 },
-    ...base,
     title: values.title.trim(),
     description: values.description.trim(),
     status: values.status,
@@ -74,28 +61,37 @@ function toTask(values, base = {}) {
   };
 }
 
-// Create or update a task from form values. Returns the task's id so the caller
-// can navigate to it.
-export function upsertTask(values, existingId) {
-  const tasks = loadTasks();
-
-  if (existingId) {
-    const next = tasks.map((t) =>
-      t.id === existingId ? toTask(values, t) : t
-    );
-    persist(next);
-    return existingId;
-  }
-
-  const task = toTask(values, { id: nextId(tasks) });
-  persist([task, ...tasks]);
-  return task.id;
+// All tasks, newest first (ordering is the server's responsibility). The API
+// wraps the list in { success, count, data: [...] } — unwrap and normalize.
+export async function loadTasks() {
+  const body = await api.get("/api/tasks");
+  return (body.data ?? []).map(fromApi);
 }
 
-// Remove a task by id and persist the result. Returns the trimmed list so the
-// caller can update its own state without a second loadTasks() round-trip.
-export function deleteTask(id) {
-  const next = loadTasks().filter((t) => t.id !== id);
-  persist(next);
-  return next;
+// A single task by id, or null when the server reports it doesn't exist.
+export async function getTask(id) {
+  try {
+    const body = await api.get(`/api/tasks/${encodeURIComponent(id)}`);
+    return fromApi(body.data);
+  } catch (err) {
+    if (err.status === 404) return null;
+    throw err;
+  }
+}
+
+// Create (no existingId) or update (existingId) a task from form values.
+// Resolves to the saved task as returned by the server.
+export async function upsertTask(values, existingId) {
+  const payload = toPayload(values);
+  const body = existingId
+    ? await api.put(`/api/tasks/${encodeURIComponent(existingId)}`, payload)
+    : await api.post("/api/tasks", payload);
+  return fromApi(body.data);
+}
+
+// Remove a task by id. Resolves once the server confirms the delete; callers
+// update their own list (the old localStorage version returned the new list,
+// but a round-trip response isn't guaranteed by the API now).
+export async function deleteTask(id) {
+  await api.del(`/api/tasks/${encodeURIComponent(id)}`);
 }
