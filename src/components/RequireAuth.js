@@ -11,6 +11,12 @@ import { isAuthenticated } from "@/lib/auth";
 //
 // This is a UX gate, not a security boundary; the real protection is the
 // backend's `protect` middleware, which 401s any task request without a token.
+//
+// Note: it only checks that a token EXISTS — it does not verify it against
+// GET /api/auth/me, so an expired/revoked token still lets the user into
+// /tasks until the first task request comes back 401. Follow-up: validate the
+// token here (and auto-logout on a 401) before relying on this for anything
+// security-sensitive.
 export default function RequireAuth({ children }) {
   const router = useRouter();
   const [allowed, setAllowed] = useState(false);

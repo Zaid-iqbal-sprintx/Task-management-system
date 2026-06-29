@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { register, isAuthenticated } from "@/lib/auth";
 
-// Sign-up screen. Rendered bare (no app shell) by AppChrome. Registering logs
-// the user straight in (the backend returns a token), then off to the board.
+// Sign-up screen. Rendered bare (no app shell) by AppChrome. Registering creates
+// the account, then sends the user to the login page to sign in (no auto-login).
 export default function SignUpPage() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -25,8 +25,10 @@ export default function SignUpPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await register({ name: name.trim(), email: email.trim(), password });
-      router.push("/tasks");
+      const trimmedEmail = email.trim();
+      await register({ name: name.trim(), email: trimmedEmail, password });
+      // Account created — send them to login to sign in, prefilling the email.
+      router.push(`/login?registered=1&email=${encodeURIComponent(trimmedEmail)}`);
     } catch (err) {
       setError(err.message || "Couldn't create your account.");
       setSubmitting(false);

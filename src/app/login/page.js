@@ -13,11 +13,22 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
 
   // Already signed in? Skip the form.
   useEffect(() => {
     if (isAuthenticated()) router.replace("/tasks");
   }, [router]);
+
+  // Coming from signup? Prefill the email and confirm the account was created.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("registered") === "1") {
+      setNotice("Account created — log in to continue.");
+      const fromSignup = params.get("email");
+      if (fromSignup) setEmail(fromSignup);
+    }
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -44,6 +55,12 @@ export default function LoginPage() {
         <p className="tk-auth-sub">Log in to pick up where you left off.</p>
 
         <form className="tk-auth-form" onSubmit={handleSubmit}>
+          {notice && (
+            <p className="tk-notice" role="status">
+              {notice}
+            </p>
+          )}
+
           <label className="tk-field">
             <span className="tk-field-label">Email</span>
             <input

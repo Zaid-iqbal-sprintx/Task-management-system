@@ -5,11 +5,12 @@
 import { api } from "./api";
 import { setSession, clearSession, getUser, isAuthenticated } from "./session";
 
-// Create an account. The backend logs the user in on success (returns a token),
-// so we store the session and resolve with the user.
+// Create an account. The backend returns a token, but we deliberately do NOT
+// store a session here — the user is sent to the login page to sign in. We drop
+// any existing session so registering always lands on a clean login screen.
 export async function register({ name, email, password }) {
   const body = await api.post("/api/auth/register", { name, email, password });
-  setSession(body.token, body.data);
+  clearSession();
   return body.data;
 }
 

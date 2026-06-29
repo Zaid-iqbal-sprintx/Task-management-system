@@ -36,12 +36,19 @@ Every response is wrapped. The frontend unwraps `.data` in `taskStore.js`.
   "due": "2026-06-25T00:00:00.000Z",// ISO timestamp or null → frontend slices to "YYYY-MM-DD"
   "assignee": { "name": "Sara Khan", "initials": "SK" },
   "tags": ["design", "growth"],
+  "owner": "665a…",                 // User _id — set server-side; see Auth
   "createdAt": "…", "updatedAt": "…"
 }
 ```
 
 `comments` and `subtasks` are **not** stored by the backend; the frontend
 defaults them (`0` and `{ done: 0, total: 0 }`) for display only.
+
+**Tasks are per-user.** `owner` is set from the authenticated user on create
+(never accepted from the request body), and every list/read/update/delete is
+scoped to the owner — you only ever see or touch your own tasks. A task you
+don't own reads as `404` (not `403`), so the API never reveals that another
+user's task exists. The frontend ignores `owner` for display.
 
 ## Request body (create / update)
 

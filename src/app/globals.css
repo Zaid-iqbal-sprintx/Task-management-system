@@ -1022,6 +1022,14 @@ body {
   color: var(--red);
 }
 .tk-error svg { flex-shrink: 0; }
+.tk-notice {
+  margin-bottom: 0.25rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.5rem;
+  background: var(--green-soft, rgba(34, 197, 94, 0.12));
+  font-size: 0.8rem;
+  color: var(--green, #15803d);
+}
 .tk-hint {
   margin-top: 0.45rem;
   font-size: 0.76rem;
@@ -1029,13 +1037,31 @@ body {
 }
 
 /* ---- Auth screens (login / signup) -------------------------------------- */
-/* Rendered bare by AppChrome, so they sit directly on the body's dark canvas. */
+/* Rendered bare by AppChrome (no .tk-shell), so — like .ph--standalone — they
+   define the Midnight Gold tokens themselves and supply their own full-screen
+   dark canvas. Without this the page falls back to the light body background
+   and the var(--…) colours below resolve to nothing. */
 .tk-auth {
+  --ink: #0f0f0f;
+  --bronze: #5e4b43;
+  --gold: #c9a86a;
+  --gold-bright: #e8cf96;
+  --cream: #ede6d8;
+  --muted: #8c8377;
+  --line: rgba(201, 168, 106, 0.18);
+  --panel: rgba(255, 255, 255, 0.035);
+  --panel-2: rgba(255, 255, 255, 0.05);
+  --red: #e08a6f;
+
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem 1.25rem;
+  color: var(--cream);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background:
+    radial-gradient(120% 90% at 50% -10%, #2a241d 0%, #1a1a1a 45%, #0f0f0f 100%);
 }
 .tk-auth-card {
   width: 100%;
@@ -1095,6 +1121,19 @@ body {
   border-color: rgba(201, 168, 106, 0.55);
   background: rgba(201, 168, 106, 0.06);
   box-shadow: 0 0 0 4px rgba(201, 168, 106, 0.1);
+}
+/* Chrome/Safari paint a light background on autofilled inputs that ignores the
+   `background` above. Override it: an opaque inset shadow covers the fill and
+   text-fill-color keeps the typed value readable on the dark canvas. */
+.tk-auth-form input:-webkit-autofill,
+.tk-auth-form input:-webkit-autofill:hover,
+.tk-auth-form input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--cream);
+  -webkit-box-shadow: 0 0 0 1000px #211e1a inset;
+  caret-color: var(--cream);
+  /* Delay the autofill background transition far into the future so it never
+     flashes back to the light colour. */
+  transition: background-color 9999s ease-in-out 0s;
 }
 .tk-auth-submit {
   width: 100%;

@@ -155,11 +155,6 @@ export default function TasksPage() {
     );
   }, [tasks, query]);
 
-  function resetFilters() {
-    setQuery("");
-    setStatus("all");
-    setPriority("all");
-  }
 
   if (!ready) return <DashboardLoader />;
   if (error) return <DashboardError message={error} onRetry={loadInitial} />;
@@ -302,11 +297,8 @@ export default function TasksPage() {
       ) : (
         <div className="tk-empty">
           <div className="tk-empty-mark">∅</div>
-          <h3>No tasks match your filters</h3>
-          <p>Try clearing the search or switching back to “All”.</p>
-          <button className="tk-empty-reset" onClick={resetFilters}>
-            Reset filters
-          </button>
+          <h3>No Task Right Now</h3>
+          <p>Create Your First Task</p>
         </div>
       )}
 
