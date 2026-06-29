@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { PEOPLE, PRIORITY_META, STATUS_META } from "@/lib/mockTasks";
 import { upsertTask } from "@/lib/taskStore";
 
-// Shared create/edit form for a task. There is no backend yet (Milestone 1),
-// so a valid submit persists to the localStorage-backed task store and routes
-// back to the board — the point of this PR is the form UX and inline
-// validation, with edits surviving a reload.
+// Shared create/edit form for a task. A valid submit sends the values to the
+// backend through the task store and, on success, routes back to the board. A
+// failed save keeps the user on the form with their input intact and surfaces
+// the error rather than navigating away.
 //
 // Usage:
 //   <TaskForm mode="create" />
@@ -87,6 +87,7 @@ export default function TaskForm({ mode = "create", task = null }) {
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false); // first submit attempt made
   const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState(null); // server-side save failure
   const [tagDraft, setTagDraft] = useState("");
   const formRef = useRef(null);
 
@@ -126,7 +127,7 @@ export default function TaskForm({ mode = "create", task = null }) {
     }
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     const found = validate(values, creating);
     setSubmitted(true);
@@ -139,17 +140,23 @@ export default function TaskForm({ mode = "create", task = null }) {
       return;
     }
 
-    // No backend yet — persist to the local task store, then return to the
-    // board. The brief delay keeps the "Saving…" affordance from flashing.
+    // Save to the backend, then return to the board. On failure stay put, drop
+    // the "Saving…" state, and show the error so the user can retry.
     setSaving(true);
-    upsertTask(values, task?.id);
-    setTimeout(() => router.push("/tasks"), 700);
+    setSubmitError(null);
+    try {
+      await upsertTask(values, task?.id);
+      router.push("/tasks");
+    } catch (err) {
+      setSubmitError(err.message || "Couldn't save the task. Please try again.");
+      setSaving(false);
+    }
   }
 
   const heading = creating ? "New Task" : "Edit Task";
   const sub = creating
     ? "Capture the work — a clear title and an owner are all we need to start."
-    : `Updating ${task?.id ?? "task"}. Tweak anything below and save.`;
+    : `Updating “${task?.title ?? "task"}”. Tweak anything below and save.`;
 
   return (
     <div className="tk">
@@ -367,6 +374,14 @@ export default function TaskForm({ mode = "create", task = null }) {
             </p>
           )}
         </div>
+
+        {/* Server-side save error (validation errors live on the fields) */}
+        {submitError && (
+          <p className="tk-error" role="alert">
+            <WarnIcon />
+            {submitError}
+          </p>
+        )}
 
         {/* Actions */}
         <div className="tk-form-actions">

@@ -28,8 +28,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
-.env
+# env files (keep .env.example tracked)
 .env*.local
 
 # vercel
@@ -44,3 +43,4 @@ package-lock 2.json
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
+config.bat
